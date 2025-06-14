@@ -59,16 +59,33 @@ async function updateBlockedContactsCounter() {
 
 async function displayGroupes() {
   const groupesList = document.getElementById("groupes-list");
-  if (!groupesList) return;
+  if (!groupesList) {
+    console.error("Element groupes-list non trouvé");
+    return;
+  }
+
+  // Afficher un indicateur de chargement
+  groupesList.innerHTML = `
+    <div class="text-center p-8 text-gray-400">
+      <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+      <p>Chargement des groupes...</p>
+    </div>
+  `;
 
   try {
     const currentUser = JSON.parse(localStorage.getItem("user"));
+    console.log("Utilisateur actuel:", currentUser);
+    
     if (!currentUser?.id) {
       throw new Error("Utilisateur non connecté");
     }
 
+    console.log("Récupération des groupes pour l'utilisateur:", currentUser.id);
     const groupes = await getGroupesByUserId(currentUser.id);
+    console.log("Groupes récupérés:", groupes);
+    
     const activeGroupes = groupes.filter((g) => !g.closed);
+    console.log("Groupes actifs:", activeGroupes);
     
     if (activeGroupes.length === 0) {
       groupesList.innerHTML = `
@@ -76,6 +93,12 @@ async function displayGroupes() {
           <i class="fas fa-users text-4xl mb-4"></i>
           <p>Aucun groupe trouvé</p>
           <p class="text-sm mt-2">Créez votre premier groupe pour commencer</p>
+          <button 
+            class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            onclick="document.getElementById('newgroup').click()"
+          >
+            Créer un groupe
+          </button>
         </div>
       `;
       return;
@@ -94,6 +117,7 @@ async function displayGroupes() {
                 <h3 class="text-white font-medium">${groupe.nom}</h3>
                 <p class="text-gray-400 text-sm">
                   ${groupe.membres ? groupe.membres.length : 0} membres
+                  ${groupe.admins && groupe.admins.length > 1 ? ` • ${groupe.admins.length} admins` : ''}
                 </p>
               </div>
             </div>
@@ -151,6 +175,12 @@ async function displayGroupes() {
         <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
         <p>Erreur lors du chargement des groupes</p>
         <p class="text-sm mt-2">${error.message}</p>
+        <button 
+          class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          onclick="displayGroupes()"
+        >
+          Réessayer
+        </button>
       </div>
     `;
   }
@@ -161,6 +191,12 @@ async function toggleGroupesView() {
   const conversationsList = document.querySelector("#panel .overflow-y-auto:last-child");
   const groupesBtn = document.getElementById("groupesBtn");
   const allTabs = document.querySelectorAll("#panel .flex.border-b.border-gray-700 button");
+
+  console.log("Toggle groupes view - Elements trouvés:", {
+    groupesContainer: !!groupesContainer,
+    conversationsList: !!conversationsList,
+    groupesBtn: !!groupesBtn
+  });
 
   if (!groupesContainer || !conversationsList) {
     console.error("Éléments manquants:", { groupesContainer, conversationsList });
@@ -174,6 +210,7 @@ async function toggleGroupesView() {
   });
 
   if (groupesContainer.classList.contains("hidden")) {
+    console.log("Affichage des groupes...");
     // Afficher les groupes
     groupesContainer.classList.remove("hidden");
     conversationsList.classList.add("hidden");
@@ -186,6 +223,7 @@ async function toggleGroupesView() {
     
     await displayGroupes();
   } else {
+    console.log("Masquage des groupes...");
     // Masquer les groupes et afficher les conversations
     groupesContainer.classList.add("hidden");
     conversationsList.classList.remove("hidden");
@@ -241,6 +279,7 @@ export async function setupPanelEvents() {
 
     // Gestion du clic sur l'onglet Groupes
     if (event.target.closest("#groupesBtn")) {
+      console.log("Clic sur l'onglet Groupes détecté");
       await toggleGroupesView();
       return;
     }
@@ -399,6 +438,9 @@ async function displayBlockedContacts() {
     blockedContactsList.innerHTML = templates.blockedContactsError;
   }
 }
+
+// Rendre displayGroupes accessible globalement pour le débogage
+window.displayGroupes = displayGroupes;
 
 // Fonctions globales pour la gestion des groupes
 window.showGroupOptions = (groupId) => {
