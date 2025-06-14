@@ -62,10 +62,19 @@ export async function getContactsByUserId(userId) {
   }
 }
 
-export async function getContacts() {
-  const response = await fetch("/src/db.json");
-  const data = await response.json();
-  return data.contacts || [];
+export async function getContacts(userId = null) {
+  try {
+    if (userId) {
+      return await fetchData(`${BASE_URL}?userId=${userId}`);
+    }
+    
+    // Si pas d'userId spécifié, récupérer tous les contacts de l'utilisateur connecté
+    const currentUser = getCurrentUser();
+    return await fetchData(`${BASE_URL}?userId=${currentUser.id}`);
+  } catch (error) {
+    console.error("Erreur récupération contacts:", error);
+    throw error;
+  }
 }
 
 export async function getContactById(id) {
